@@ -1,0 +1,29 @@
+.note-list {
+  margin-top: 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 225px);
+  gap: 15px;
+  justify-content: center;
+}
+
+.create-note {
+  position: absolute !important;
+  right: 150px;
+  bottom: 25px;
+}
+
+@media (width <= 800px) {
+  .create-note {
+    position: absolute !important;
+    right: 50px;
+    bottom: 25px;
+  }
+}
+
+@media (width <= 600px) {
+  .create-note {
+    position: absolute !important;
+    right: 25px;
+    bottom: 15px;
+  }
+}

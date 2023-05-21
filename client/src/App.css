@@ -1,0 +1,15 @@
+.container {
+  padding: 25px 150px;
+}
+
+@media (width <= 800px) {
+  .container {
+    padding: 25px 50px;
+  }
+}
+
+@media (width <= 600px) {
+  .container {
+    padding: 15px 25px;
+  }
+}

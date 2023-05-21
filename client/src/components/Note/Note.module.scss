@@ -1,0 +1,12 @@
+.note {
+  width: 225px;
+  border-radius: 15px !important;
+
+  &__time-stamp {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    display: inline-block;
+    margin-top: 5px !important;
+    padding: 4px;
+    border-radius: 5px;
+  }
+}
