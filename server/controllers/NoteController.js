@@ -5,6 +5,7 @@ export const create = async (req, res) => {
   const doc = new NoteModel({
     text: req.body.text,
     timeStamp: req.body.timeStamp,
+    completed: req.body.completed ? true : false,
     color: req.body.color,
     owner: req.user._id,
   });
@@ -23,7 +24,7 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const notes = await NoteModel.find({ owner: req.user }).sort({ timeStamp: -1 });
+    const notes = await NoteModel.find({ owner: req.user }).sort({ completed: 1, timeStamp: 1 });
 
     res.json(notes);
   } catch (err) {
@@ -51,7 +52,7 @@ export const update = async (req, res) => {
   try {
     const note = await NoteModel.findByIdAndUpdate(
       req.params.id,
-      { text: req.body.text, timeStamp: req.body.timeStamp, color: req.body.color },
+      { text: req.body.text, timeStamp: req.body.timeStamp, completed: req.body.completed, color: req.body.color },
       { returnDocument: 'after' }
     );
 

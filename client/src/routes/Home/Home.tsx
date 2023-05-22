@@ -1,18 +1,19 @@
-import { Add, SearchRounded } from '@mui/icons-material';
-import { Fab, InputAdornment, Skeleton, TextField } from '@mui/material';
+import { Add, LogoutRounded, SearchRounded } from '@mui/icons-material';
+import { Button, Fab, InputAdornment, Skeleton, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import EditNoteModal from '../../components/EditNoteModal/EditNoteModal';
 import Note from '../../components/Note/Note';
 import SessionExpiredModal from '../../components/SessionExpiredModal/SessionExpiredModal';
 import useAuth from '../../hooks/useAuth';
-import { INote } from '../../types';
+import { INote, INoteData } from '../../types';
 import axios from '../../utils/axios';
 import styles from './Home.module.scss';
-import EditNoteModal from '../../components/CreateNoteModal/EditNoteModal';
 
 const Home = () => {
   const [notes, setNotes] = useState<INote[]>([]);
   const [sortedNotes, setSortedNotes] = useState<INote[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [token, setToken] = useAuth();
   const [loading, setLoading] = useState(true);
@@ -25,15 +26,15 @@ const Home = () => {
       return navigate('/signup');
     }
 
-    const fetchNotes = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('/notes', {
+        const responseNotes = await axios.get('/notes', {
           headers: {
             Authorization: token,
           },
         });
 
-        setNotes(response.data);
+        setNotes(responseNotes.data);
         setLoading(false);
       } catch (err: any) {
         console.log(err);
@@ -44,55 +45,51 @@ const Home = () => {
       }
     };
 
-    fetchNotes();
+    fetchData();
   }, [token]);
 
   useEffect(() => {
-    setSortedNotes(
-      notes.sort((a, b) => {
-        return b.timeStamp - a.timeStamp;
-      })
-    );
+    const timeSorted = [...notes].sort((a, b) => {
+      return a.timeStamp - b.timeStamp;
+    });
+
+    const completedSorted = timeSorted.sort((a, b) => {
+      if (a.completed === b.completed) {
+        return 0;
+      } else if (a.completed) {
+        return 1;
+      } else {
+        return -1;
+      }
+    });
+
+    setSortedNotes(completedSorted);
   }, [notes]);
 
-  const handleSaveNote = async (text: string, timeStamp: number, color: string) => {
-    if (editingNote) {
-      try {
-        const response = await axios.patch(
-          `/notes/${editingNote._id}`,
-          { text, timeStamp, color },
-          { headers: { Authorization: token } }
-        );
+  const handleSaveNote = async (noteData: INoteData) => {
+    try {
+      if (editingNote) {
+        const response = await axios.patch(`/notes/${editingNote._id}`, noteData, { headers: { Authorization: token } });
 
         setNotes((prev) =>
           prev.map((note) => {
             if (note._id === editingNote._id) {
-              note.text = response.data.text;
-              note.timeStamp = response.data.timeStamp;
-              note.color = response.data.color;
+              note = response.data;
             }
 
             return note;
           })
         );
-      } catch (err: any) {
-        console.log(err);
-
-        if (err.response?.status === 440) {
-          setSessionExpired(true);
-        }
-      }
-    } else {
-      try {
-        const response = await axios.post('/notes', { text, timeStamp, color }, { headers: { Authorization: token } });
+      } else {
+        const response = await axios.post('/notes', noteData, { headers: { Authorization: token } });
 
         setNotes((prev) => [response.data, ...prev]);
-      } catch (err: any) {
-        console.log(err);
+      }
+    } catch (err: any) {
+      console.log(err);
 
-        if (err.response?.status === 440) {
-          setSessionExpired(true);
-        }
+      if (err.response?.status === 440) {
+        setSessionExpired(true);
       }
     }
 
@@ -133,32 +130,37 @@ const Home = () => {
 
   return (
     <>
-      <TextField
-        className={styles.search}
-        label='Search'
-        fullWidth
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position='start'>
-              <SearchRounded />
-            </InputAdornment>
-          ),
-        }}
-        variant='outlined'
-        size='small'
-      />
+      <div className={styles.header}>
+        <TextField
+          autoComplete='off'
+          className={styles.search}
+          label='Search'
+          fullWidth
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position='start'>
+                <SearchRounded />
+              </InputAdornment>
+            ),
+          }}
+          variant='outlined'
+          size='small'
+        />
+        <Button onClick={() => setToken(null)} color='error' sx={{ whiteSpace: 'nowrap' }}>
+          <LogoutRounded />
+        </Button>
+      </div>
       <div className={styles['note-list']}>
         {loading
           ? [...Array(15)].map((_item, key) => <Skeleton key={key} height={150} width={225} animation='wave' />)
-          : sortedNotes.map((note) => (
-              <Note
-                onClick={() => handleNoteClick(note)}
-                key={note._id}
-                text={note.text}
-                color={note.color}
-                timeStamp={note.timeStamp}
-              />
-            ))}
+          : sortedNotes.map(
+              (note) =>
+                note.text.toLocaleLowerCase().includes(searchQuery.toLocaleLowerCase()) && (
+                  <Note onClick={() => handleNoteClick(note)} key={note._id} noteData={note} />
+                )
+            )}
       </div>
       <SessionExpiredModal isSessionExpired={isSessionExpired} setToken={setToken} />
       <EditNoteModal

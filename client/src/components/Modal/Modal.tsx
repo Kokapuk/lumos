@@ -21,6 +21,8 @@ const Modal = (props: IProps) => {
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
+    maxHeight: '100%',
+    overflow: 'auto',
   };
 
   return (
